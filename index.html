@@ -3,35 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Обвязка текстов ВПР</title>
+  <title>ВПР · DeepSeek</title>
   <style>
     :root {
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      line-height: 1.45;
-      color: #1a1a1a;
+      line-height: 1.5;
+      color: #111;
+      --border: #e0e0e0;
+      --muted: #666;
     }
-    body { max-width: 52rem; margin: 1.5rem auto; padding: 0 1rem; }
-    h1 { font-size: 1.35rem; font-weight: 600; }
-    fieldset { border: 1px solid #ccc; border-radius: 6px; margin: 1rem 0; padding: 0.75rem 1rem; }
-    legend { padding: 0 0.35rem; font-weight: 600; }
-    label { display: block; margin: 0.5rem 0 0.25rem; }
-    input[type="file"] { margin-bottom: 0.35rem; }
+    body {
+      max-width: 36rem;
+      margin: 2rem auto;
+      padding: 0 1.25rem 3rem;
+    }
+    h1 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0 0 1.5rem;
+    }
+    label.block {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin: 1.25rem 0 0.5rem;
+    }
     .dropzone {
       display: block;
       position: relative;
-      border: 2px dashed #c5c5c5;
-      border-radius: 10px;
-      padding: 1.35rem 1rem 1.15rem;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      padding: 1rem;
       text-align: center;
       background: #fafafa;
       cursor: pointer;
-      transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+      transition: border-color 0.15s ease, background 0.15s ease;
     }
-    .dropzone:hover { border-color: #999; background: #f5f5f5; }
+    .dropzone:hover { border-color: #bbb; background: #f5f5f5; }
     .dropzone--over {
-      border-color: #996633;
-      background: #fff9ed;
-      box-shadow: inset 0 0 0 1px rgba(153, 102, 51, 0.25);
+      border-color: #888;
+      background: #f0f0f0;
     }
     .dropzone-input {
       position: absolute;
@@ -44,121 +59,139 @@
       white-space: nowrap;
       border: 0;
     }
-    .dropzone-visual { display: block; pointer-events: none; }
-    .dropzone-line { margin: 0.2rem 0; font-size: 0.95rem; }
-    .dropzone-muted { font-size: 0.88rem; color: #555; }
+    .dropzone-visual { display: block; pointer-events: none; font-size: 0.9rem; }
+    .dropzone-muted { font-size: 0.82rem; color: var(--muted); margin-top: 0.35rem; }
     .dropzone-link {
       pointer-events: auto;
-      color: #1a5fb4;
+      color: #0d47a1;
       text-decoration: underline;
       cursor: pointer;
     }
     .dropzone-status {
-      margin: 0.65rem 0 0;
-      font-size: 0.82rem;
-      color: #666;
+      margin-top: 0.5rem;
+      font-size: 0.78rem;
+      color: var(--muted);
       word-break: break-word;
     }
-    .row { margin: 0.75rem 0; }
-    button {
-      padding: 0.45rem 1rem;
+    input[type="password"],
+    input[type="url"] {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      padding: 0.5rem 0.65rem;
       border-radius: 6px;
-      border: 1px solid #333;
-      background: #222;
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    details.api-more {
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    details.api-more summary {
+      cursor: pointer;
+      user-select: none;
+    }
+    details.api-more[open] summary { margin-bottom: 0.5rem; }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1.5rem 0 0;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border: none;
+      background: #111;
       color: #fff;
       cursor: pointer;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
     }
-    button:hover { background: #444; }
+    button:hover { background: #333; }
     button.secondary {
       background: #fff;
-      color: #222;
-      margin-right: 0.5rem;
+      color: #111;
+      border: 1px solid var(--border);
     }
-    textarea {
-      width: 100%;
-      min-height: 14rem;
-      box-sizing: border-box;
-      font-family: ui-monospace, monospace;
-      font-size: 0.8rem;
-      border-radius: 6px;
-      border: 1px solid #bbb;
-      padding: 0.5rem;
-    }
+    button.secondary:hover { background: #fafafa; }
     #log {
       white-space: pre-wrap;
-      font-size: 0.9rem;
-      color: #6b4423;
-      margin-top: 0.75rem;
+      font-size: 0.8rem;
+      color: #5c4a3a;
+      margin: 1rem 0 0;
+      min-height: 0;
     }
-    .hint { font-size: 0.88rem; color: #555; margin-top: 0.25rem; }
-    code { background: #f4f4f4; padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.9em; }
-    .api-row input[type="text"], .api-row input[type="password"], .api-row input[type="url"] {
-      width: 100%; max-width: 28rem; box-sizing: border-box; padding: 0.35rem 0.5rem; border-radius: 6px; border: 1px solid #bbb;
+    .preview-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      margin: 1.25rem 0 0.5rem;
+    }
+    textarea#preview {
+      width: 100%;
+      min-height: 12rem;
+      box-sizing: border-box;
+      font-family: ui-monospace, monospace;
+      font-size: 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      padding: 0.6rem;
+      resize: vertical;
+    }
+    .footnote {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 1.75rem;
+      line-height: 1.45;
     }
   </style>
 </head>
 <body>
-  <h1>Обвязка текстов ВПР</h1>
-  <p>Локальная страница: шаблон и задания — файлы <code>.txt</code> или <code>.htm</code> / <code>.html</code> (в т.ч. «Веб-страница» из Word), пакетно — несколько файлов или <code>.zip</code>. В архиве результата сохраняются те же имена и расширения; внутри — готовый фрагмент кода для ВПР.</p>
+  <h1>ВПР · DeepSeek</h1>
 
-  <fieldset>
-    <legend>Шаблон</legend>
-    <label class="dropzone" id="dropzoneTpl" data-dropzone="template">
-      <input type="file" id="tplFile" class="dropzone-input" accept=".txt,.htm,.html,text/plain,text/html" />
-      <span class="dropzone-visual">
-        <span class="dropzone-line"><strong>Перетащите сюда</strong> файл шаблона (<code>.txt</code> или <code>.htm</code> с кодом)</span>
-        <span class="dropzone-line dropzone-muted">или нажмите, чтобы <span class="dropzone-link">выбрать файл</span></span>
-        <span class="dropzone-status" id="tplStatus">Используется встроенный шаблон</span>
-      </span>
-    </label>
-    <p class="hint">Шаблон — с плейсхолдерами <code>__INSTRUCTION__</code> … <code>__HINT__</code> или <strong>полный образец</strong> (как <code>Код_образец.txt</code>): разбор в плейсхолдеры автоматически. Без файла — встроенный шаблон; при <code>python -m http.server</code> может подтянуться <code>templates/</code>.</p>
-  </fieldset>
+  <label class="block" for="tplFile">Образец HTML</label>
+  <label class="dropzone" id="dropzoneTpl" data-dropzone="template">
+    <input type="file" id="tplFile" class="dropzone-input" accept=".txt,.htm,.html,text/plain,text/html" />
+    <span class="dropzone-visual">
+      Перетащите файл или <span class="dropzone-link">выберите</span>
+      <span class="dropzone-muted">.txt / .htm — структура для ИИ</span>
+      <span class="dropzone-status" id="tplStatus">Встроенный образец</span>
+    </span>
+  </label>
 
-  <fieldset>
-    <legend>Задания</legend>
-    <label class="dropzone" id="dropzoneTasks" data-dropzone="tasks">
-      <input type="file" id="taskFiles" class="dropzone-input" accept=".txt,.htm,.html,.zip,text/plain,text/html,application/zip" multiple />
-      <span class="dropzone-visual">
-        <span class="dropzone-line"><strong>Перетащите сюда</strong> <code>.txt</code> / <code>.htm</code> или архив <code>.zip</code></span>
-        <span class="dropzone-line dropzone-muted">или нажмите, чтобы <span class="dropzone-link">выбрать файлы</span></span>
-        <span class="dropzone-status" id="taskStatus">Файлы не выбраны</span>
-      </span>
-    </label>
-    <p class="hint">Полные предложения в обвязке даёт только <strong>исходный</strong> <code>.htm</code> из Word/KIM (в т.ч. из папки задания). Если загрузить <strong>уже собранный</strong> фрагмент с <code>span.ans</code>, при отдельных строках А–В инструмент лишь подставит текст в шапку и исправит <code>&amp;nbsp;</code> — обрезанный текст в span сам не восстановит.</p>
-  </fieldset>
+  <label class="block" for="taskFiles">Задания</label>
+  <label class="dropzone" id="dropzoneTasks" data-dropzone="tasks">
+    <input type="file" id="taskFiles" class="dropzone-input" accept=".txt,.htm,.html,.zip,text/plain,text/html,application/zip" multiple />
+    <span class="dropzone-visual">
+      Файлы или <span class="dropzone-link">выбор</span> · при необходимости .zip
+      <span class="dropzone-status" id="taskStatus">Не выбрано</span>
+    </span>
+  </label>
 
-  <p class="hint">В выходной HTML <strong>всегда</strong> подставляются неразрывные пробелы <code>&nbsp;</code> по простым русским правилам (однобуквенные слова, предлоги «в», «по», «и» и т.д.), в том числе после ответа ИИ.</p>
+  <label class="block" for="deepseekKey">API-ключ</label>
+  <input type="password" id="deepseekKey" autocomplete="off" placeholder="sk-…" />
 
-  <fieldset>
-    <legend>DeepSeek (ИИ-парсинг)</legend>
-    <div class="row">
-      <label><input type="checkbox" id="optDeepSeek" /> Разбор структуры задания через API <a href="https://api-docs.deepseek.com/" target="_blank" rel="noopener">DeepSeek</a> (первый файл — отдельный запрос под <a href="https://api-docs.deepseek.com/guides/kv_cache" target="_blank" rel="noopener">prefix cache</a>, остальные параллельно; в логе — usage и cache_hit/cache_miss)</label>
-    </div>
-    <div class="row">
-      <label><input type="checkbox" id="optDeepSeekFullHtml" checked /> ИИ собирает <strong>полный HTML</strong> по загруженному образцу-шаблону (таблицы, select, ВПР со span.ans и т.д.). Снимите галочку для старого режима: JSON → плейсхолдеры в шаблоне.</label>
-    </div>
-    <div class="row api-row">
-      <label for="deepseekKey">API-ключ</label>
-      <input type="password" id="deepseekKey" autocomplete="off" placeholder="sk-…" />
-    </div>
-    <div class="row api-row">
-      <label for="deepseekBase">Базовый URL</label>
-      <input type="url" id="deepseekBase" value="https://api.deepseek.com/v1" placeholder="https://api.deepseek.com/v1" />
-    </div>
-    <p class="hint">Ключ сохраняется в <code>localStorage</code> этого браузера. Запросы идут с вашей страницы на сервер DeepSeek; при ошибке «Failed to fetch» часто мешает CORS — откройте страницу через HTTPS-сайт или используйте локальный прокси к API. В запрос уходит <strong>исходный файл шаблона</strong> (как образец вёрстки) и задание; длинный текст режется примерно до 200k символов на запрос. Режим «полный HTML»: ответ — готовая разметка; у API DeepSeek лимит вывода <strong>до 8192</strong> токенов (иначе 400) — при обрыве уменьшите объём задания или шаблона. Ответ DeepSeek при одном файле (первом в пакете) <strong>стримится</strong> в предпросмотр. Режим JSON: нужны плейсхолдеры в шаблоне; типографские <code>&nbsp;</code> в финальном HTML задаются автоматически.</p>
-  </fieldset>
+  <details class="api-more">
+    <summary>Базовый URL API</summary>
+    <input type="url" id="deepseekBase" value="https://api.deepseek.com/v1" placeholder="https://api.deepseek.com/v1" />
+  </details>
 
-  <div class="row">
-    <button type="button" id="btnRun">Собрать</button>
-    <button type="button" class="secondary" id="btnDownloadOne" hidden>Скачать файл</button>
-    <button type="button" class="secondary" id="btnDownloadZip" hidden>Скачать ZIP</button>
+  <div class="actions">
+    <button type="button" id="btnRun">Обработать</button>
+    <button type="button" class="secondary" id="btnDownloadOne" hidden>Скачать</button>
+    <button type="button" class="secondary" id="btnDownloadZip" hidden>ZIP</button>
   </div>
 
   <p id="log"></p>
 
-  <label for="preview">Предпросмотр (первый файл или фрагмент)</label>
-  <textarea id="preview" readonly rows="16" spellcheck="false"></textarea>
+  <label class="preview-label" for="preview">Вывод</label>
+  <textarea id="preview" readonly rows="14" spellcheck="false"></textarea>
+
+  <p class="footnote">Ключ хранится в localStorage браузера. При ошибке сети (CORS) откройте страницу через HTTPS или прокси к API.</p>
 
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="app.js"></script>

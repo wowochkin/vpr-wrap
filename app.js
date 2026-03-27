@@ -564,11 +564,6 @@ __QUESTIONS_ITEMS__
     return injectPlaceholdersIntoLegacyTemplate(tpl);
   }
 
-  function validateTemplate(tpl) {
-    const missing = PLACEHOLDERS.filter((p) => !tpl.includes(p));
-    return missing;
-  }
-
   const DEFAULT_HINT_LLM =
     'Чтобы выбрать нужное предложение, щёлкните левой кнопкой мыши в любом его месте. После чего предложение выделится фоном. Чтобы отменить выбор, щёлкните повторно левой кнопкой мыши в любом месте этого предложения.';
 
@@ -1116,21 +1111,6 @@ __QUESTIONS_ITEMS__
     return { html: html, usage: out.usage };
   }
 
-  function processOne(rawText, template, opts, sourceFileName) {
-    if (isVprOutputFragment(rawText)) {
-      try {
-        const vprDoc = new DOMParser().parseFromString(rawText, 'text/html');
-        if (vprHasStructuredQuestions(vprDoc)) {
-          return polishVprFragmentHtml(rawText);
-        }
-      } catch (e) {}
-    }
-
-    const plain = prepareInputPlain(rawText, sourceFileName || '');
-    const parsed = parseAssignmentText(plain);
-    return buildOutputFromParsed(parsed, template, opts);
-  }
-
   function downloadBlob(blob, filename) {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -1225,7 +1205,7 @@ __QUESTIONS_ITEMS__
   }
 
   function formatTaskStatus(fileList) {
-    if (!fileList || !fileList.length) return 'Файлы не выбраны';
+    if (!fileList || !fileList.length) return 'Не выбрано';
     const names = Array.from(fileList).map(function (f) {
       return f.name;
     });
@@ -1242,8 +1222,6 @@ __QUESTIONS_ITEMS__
     const elDropTasks = document.getElementById('dropzoneTasks');
     const elTplStatus = document.getElementById('tplStatus');
     const elTaskStatus = document.getElementById('taskStatus');
-    const elDeepSeek = document.getElementById('optDeepSeek');
-    const elDeepSeekFullHtml = document.getElementById('optDeepSeekFullHtml');
     const elDeepseekKey = document.getElementById('deepseekKey');
     const elDeepseekBase = document.getElementById('deepseekBase');
     const elRun = document.getElementById('btnRun');
@@ -1273,34 +1251,20 @@ __QUESTIONS_ITEMS__
       }
     } catch (e) {}
 
-    try {
-      if (elDeepSeekFullHtml) {
-        const fh = localStorage.getItem('vpr-deepseek-fullhtml');
-        if (fh === '0') elDeepSeekFullHtml.checked = false;
-        else if (fh === '1') elDeepSeekFullHtml.checked = true;
-        elDeepSeekFullHtml.addEventListener('change', function () {
-          try {
-            localStorage.setItem('vpr-deepseek-fullhtml', elDeepSeekFullHtml.checked ? '1' : '0');
-          } catch (err) {}
-        });
-      }
-    } catch (e) {}
-
     lastTemplate = DEFAULT_TEMPLATE;
-    elLog.textContent =
-      'Активен шаблон по умолчанию (встроен в страницу). Можно подменить своим .txt / .htm с кодом.';
+    elLog.textContent = '';
     fetch('templates/шаблон-vpr-по-умолчанию.txt')
       .then((r) => (r.ok ? r.text() : Promise.reject()))
       .then((t) => {
         lastTemplate = t;
-        elLog.textContent = 'Подгружен файл templates/шаблон-vpr-по-умолчанию.txt (если открыли через локальный сервер).';
+        if (elTplStatus) elTplStatus.textContent = 'templates/шаблон-vpr-по-умолчанию.txt';
       })
       .catch(() => {});
 
     elTemplate.addEventListener('change', async () => {
       const f = elTemplate.files && elTemplate.files[0];
       if (!f) {
-        if (elTplStatus) elTplStatus.textContent = 'Используется встроенный шаблон';
+        if (elTplStatus) elTplStatus.textContent = 'Встроенный образец';
         return;
       }
       lastTemplate = await readFile(f);
@@ -1324,7 +1288,7 @@ __QUESTIONS_ITEMS__
           return txt.length ? [txt[0]] : [];
         },
         onReject: function () {
-          elLog.textContent = 'В зону шаблона перетащите один файл .txt / .htm с кодом.';
+          elLog.textContent = 'Нужен один файл .txt / .htm.';
         },
       });
     }
@@ -1344,7 +1308,7 @@ __QUESTIONS_ITEMS__
           });
         },
         onReject: function () {
-          elLog.textContent = 'В зону заданий перетащите .txt / .htm / .html и/или .zip.';
+          elLog.textContent = 'Нужны .txt / .htm / .html или .zip.';
         },
       });
     }
@@ -1365,30 +1329,18 @@ __QUESTIONS_ITEMS__
         template = await readFile(elTemplate.files[0]);
       }
       if (!template || !template.trim()) {
-        elLog.textContent =
-          'Ошибка: нет шаблона. Загрузите .txt / .htm с кодом или откройте страницу так, чтобы подтянулся шаблон по умолчанию.';
+        elLog.textContent = 'Нет образца HTML: загрузите .txt / .htm или откройте через сервер с templates/.';
         return;
       }
 
       const templateUploaded = template.trim();
       const opts = {};
-      const useDeepSeek = elDeepSeek && elDeepSeek.checked;
-      const useDeepSeekFullHtml =
-        useDeepSeek && elDeepSeekFullHtml && elDeepSeekFullHtml.checked;
+      const useDeepSeekFullHtml = true;
 
       const templateWithPh = ensureTemplatePlaceholders(templateUploaded);
       const legacyAuto =
         templateWithPh !== templateUploaded &&
         templateUploaded.indexOf('__SENTENCES_BLOCK__') === -1;
-
-      if (!useDeepSeekFullHtml) {
-        const missing = validateTemplate(templateWithPh);
-        if (missing.length) {
-          elLog.textContent =
-            'В шаблоне нет плейсхолдеров: ' + missing.join(', ') + '. Добавьте их в текст шаблона или включите «ИИ собирает полный HTML».';
-          return;
-        }
-      }
 
       template = templateWithPh;
       const apiKey = elDeepseekKey ? elDeepseekKey.value.trim() : '';
@@ -1397,21 +1349,18 @@ __QUESTIONS_ITEMS__
           ? elDeepseekBase.value.trim()
           : 'https://api.deepseek.com/v1';
 
-      if (useDeepSeek) {
-        if (!apiKey) {
-          elLog.textContent = 'Включён режим DeepSeek: укажите API-ключ (platform.deepseek.com).';
-          return;
-        }
-        try {
-          localStorage.setItem('vpr-deepseek-key', apiKey);
-          localStorage.setItem('vpr-deepseek-base', apiBaseUrl);
-        } catch (e) {}
+      if (!apiKey) {
+        elLog.textContent = 'Укажите API-ключ DeepSeek.';
+        return;
       }
+      try {
+        localStorage.setItem('vpr-deepseek-key', apiKey);
+        localStorage.setItem('vpr-deepseek-base', apiBaseUrl);
+      } catch (e) {}
 
       const collected = await collectInputFiles(elTasks.files);
       if (!collected.length) {
-        elLog.textContent =
-          'Выберите один или несколько файлов заданий (.txt, .htm, .html) и/или архив .zip.';
+        elLog.textContent = 'Выберите задания (.txt / .htm / .zip).';
         return;
       }
 
@@ -1421,143 +1370,99 @@ __QUESTIONS_ITEMS__
       elRun.disabled = true;
 
       try {
-        let results;
+        const n = collected.length;
+        elLog.textContent =
+          'DeepSeek · полный HTML · ' +
+          n +
+          ' файл(ов); первый — отдельный запрос' +
+          (n > 1 ? ', остальные параллельно' : '') +
+          '.';
+        const results = [];
+        const sum = { hit: 0, miss: 0, prompt: 0, completion: 0, total: 0, costUsd: 0 };
 
-        if (useDeepSeek) {
-          const n = collected.length;
-          elLog.textContent = useDeepSeekFullHtml
-            ? 'DeepSeek (полный HTML по образцу): ' +
-              n +
-              ' файл(ов) — 1-й запрос отдельно (прогрев prefix cache), ' +
-              (n > 1 ? 'остальные ' + (n - 1) + ' параллельно' : 'один файл') +
-              '.'
-            : 'DeepSeek (JSON → плейсхолдеры): ' +
-              n +
-              ' файл(ов) — 1-й запрос отдельно (прогрев prefix cache общего system), ' +
-              (n > 1
-                ? 'остальные ' + (n - 1) + ' параллельно'
-                : 'один файл') +
-              ' (см. api-docs.deepseek.com/guides/kv_cache).';
-          results = [];
-          const sum = { hit: 0, miss: 0, prompt: 0, completion: 0, total: 0, costUsd: 0 };
-
-          function bumpUsage(u) {
-            if (!u) return;
-            sum.hit += Number(u.prompt_cache_hit_tokens) || 0;
-            sum.miss += Number(u.prompt_cache_miss_tokens) || 0;
-            sum.prompt += Number(u.prompt_tokens) || 0;
-            sum.completion += Number(u.completion_tokens) || 0;
-            sum.total += Number(u.total_tokens) || 0;
-            const c = estimateDeepSeekCostUsd(u);
-            if (c != null && isFinite(c)) sum.costUsd += c;
-          }
-
-          async function runDeepSeekItem(item, baseName, useStreamPreview) {
-            let raw;
-            try {
-              if (item.file) raw = await readFile(item.file);
-              else raw = await readZipEntry(item);
-            } catch (e) {
-              return { ok: false, name: baseName, err: 'не прочитан файл', usage: null };
-            }
-            try {
-              const onStreamDelta =
-                useStreamPreview && elPreview
-                  ? function (acc) {
-                      if (streamEpochSnap !== deepSeekStreamEpoch) return;
-                      const head =
-                        '«' +
-                        baseName +
-                        '» — ' +
-                        (useDeepSeekFullHtml
-                          ? 'ответ ИИ (стриминг)\n\n'
-                          : 'JSON от ИИ (стриминг)\n\n');
-                      elPreview.value = head + acc;
-                      elPreview.scrollTop = elPreview.scrollHeight;
-                    }
-                  : null;
-              const out = await processWithDeepSeek(
-                raw,
-                template,
-                templateUploaded,
-                opts,
-                baseName,
-                apiKey,
-                apiBaseUrl,
-                useDeepSeekFullHtml,
-                onStreamDelta
-              );
-              return { ok: true, name: baseName, text: out.html, usage: out.usage };
-            } catch (e) {
-              return { ok: false, name: baseName, err: e.message || String(e), usage: null };
-            }
-          }
-
-          function pushDsResult(r) {
-            bumpUsage(r.usage);
-            elLog.textContent += '\n  «' + r.name + '»: ' + formatUsageLine(r.usage);
-            if (r.ok) results.push({ ok: true, name: r.name, text: r.text });
-            else results.push({ ok: false, name: r.name, err: r.err });
-          }
-
-          const first = collected[0];
-          const firstName = first.file ? first.file.name : first.path.split('/').pop();
-          pushDsResult(await runDeepSeekItem(first, firstName, true));
-
-          if (n > 1) {
-            elLog.textContent += '\nПараллельная обработка остальных…';
-            const batch = await Promise.all(
-              collected.slice(1).map(function (item) {
-                const baseName = item.file ? item.file.name : item.path.split('/').pop();
-                return runDeepSeekItem(item, baseName, false);
-              })
-            );
-            for (let bi = 0; bi < batch.length; bi++) {
-              pushDsResult(batch[bi]);
-            }
-          }
-
-          elLog.textContent +=
-            '\n— Сумма по пакету: cache_hit ' +
-            sum.hit +
-            ', cache_miss ' +
-            sum.miss +
-            ', prompt ' +
-            sum.prompt +
-            ', completion ' +
-            sum.completion +
-            ', total ' +
-            sum.total +
-            ', оценка ' +
-            formatDeepSeekCostUsd(sum.costUsd > 0 ? sum.costUsd : null) +
-            ' (вход: $' +
-            DEEPSEEK_USD_PER_1M_INPUT_CACHE_HIT +
-            '/$' +
-            DEEPSEEK_USD_PER_1M_INPUT_CACHE_MISS +
-            ' за 1M cache hit/miss, выход: $' +
-            DEEPSEEK_USD_PER_1M_OUTPUT +
-            ' за 1M).';
-        } else {
-          const jobs = collected.map(function (item) {
-            const baseName = item.file ? item.file.name : item.path.split('/').pop();
-            return (async function () {
-              let raw;
-              try {
-                if (item.file) raw = await readFile(item.file);
-                else raw = await readZipEntry(item);
-              } catch (e) {
-                return { ok: false, name: baseName, err: 'не прочитан файл' };
-              }
-              try {
-                const html = processOne(raw, template, opts, baseName);
-                return { ok: true, name: baseName, text: html };
-              } catch (e) {
-                return { ok: false, name: baseName, err: e.message || String(e) };
-              }
-            })();
-          });
-          results = await Promise.all(jobs);
+        function bumpUsage(u) {
+          if (!u) return;
+          sum.hit += Number(u.prompt_cache_hit_tokens) || 0;
+          sum.miss += Number(u.prompt_cache_miss_tokens) || 0;
+          sum.prompt += Number(u.prompt_tokens) || 0;
+          sum.completion += Number(u.completion_tokens) || 0;
+          sum.total += Number(u.total_tokens) || 0;
+          const c = estimateDeepSeekCostUsd(u);
+          if (c != null && isFinite(c)) sum.costUsd += c;
         }
+
+        async function runDeepSeekItem(item, baseName, useStreamPreview) {
+          let raw;
+          try {
+            if (item.file) raw = await readFile(item.file);
+            else raw = await readZipEntry(item);
+          } catch (e) {
+            return { ok: false, name: baseName, err: 'не прочитан файл', usage: null };
+          }
+          try {
+            const onStreamDelta =
+              useStreamPreview && elPreview
+                ? function (acc) {
+                    if (streamEpochSnap !== deepSeekStreamEpoch) return;
+                    const head = '«' + baseName + '» — стрим\n\n';
+                    elPreview.value = head + acc;
+                    elPreview.scrollTop = elPreview.scrollHeight;
+                  }
+                : null;
+            const out = await processWithDeepSeek(
+              raw,
+              template,
+              templateUploaded,
+              opts,
+              baseName,
+              apiKey,
+              apiBaseUrl,
+              useDeepSeekFullHtml,
+              onStreamDelta
+            );
+            return { ok: true, name: baseName, text: out.html, usage: out.usage };
+          } catch (e) {
+            return { ok: false, name: baseName, err: e.message || String(e), usage: null };
+          }
+        }
+
+        function pushDsResult(r) {
+          bumpUsage(r.usage);
+          elLog.textContent += '\n  «' + r.name + '»: ' + formatUsageLine(r.usage);
+          if (r.ok) results.push({ ok: true, name: r.name, text: r.text });
+          else results.push({ ok: false, name: r.name, err: r.err });
+        }
+
+        const first = collected[0];
+        const firstName = first.file ? first.file.name : first.path.split('/').pop();
+        pushDsResult(await runDeepSeekItem(first, firstName, true));
+
+        if (n > 1) {
+          elLog.textContent += '\nОстальные файлы…';
+          const batch = await Promise.all(
+            collected.slice(1).map(function (item) {
+              const baseName = item.file ? item.file.name : item.path.split('/').pop();
+              return runDeepSeekItem(item, baseName, false);
+            })
+          );
+          for (let bi = 0; bi < batch.length; bi++) {
+            pushDsResult(batch[bi]);
+          }
+        }
+
+        elLog.textContent +=
+          '\nИтого: hit ' +
+          sum.hit +
+          ', miss ' +
+          sum.miss +
+          ', prompt ' +
+          sum.prompt +
+          ', completion ' +
+          sum.completion +
+          ', total ' +
+          sum.total +
+          ', ≈ ' +
+          formatDeepSeekCostUsd(sum.costUsd > 0 ? sum.costUsd : null);
 
         for (let ri = 0; ri < results.length; ri++) {
           const r = results[ri];
@@ -1597,14 +1502,8 @@ __QUESTIONS_ITEMS__
       }
       if (outputs.length) {
         let tail = 'Готово: ' + outputs.length + ' файл(ов).';
-        if (useDeepSeek) {
-          tail =
-            (useDeepSeekFullHtml
-              ? 'Режим DeepSeek: полный HTML (deepseek-chat).\n'
-              : 'Режим DeepSeek: JSON → шаблон (deepseek-chat).\n') + tail;
-        }
         if (legacyAuto) {
-          tail = 'Шаблон без плейсхолдеров разобран как полный образец (#996633, вопросы, подсказка).\n' + tail;
+          tail = 'Образец без плейсхолдеров — разбор как полный HTML.\n' + tail;
         }
         elLog.textContent += (elLog.textContent ? '\n' : '') + tail;
       }
