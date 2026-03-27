@@ -1,0 +1,21 @@
+<style>
+    span.ans {  border-bottom:1px dotted #000088; cursor:pointer; }
+    span.ans.marked { border-bottom:1px solid #880000; color:#880000; font-weight:bold; background-color:#ffff88; }
+    </style>
+    
+    <div style="border:1px solid #000000;"><center><b>__INSTRUCTION__</b></center></div><br>
+    
+    <p class=MsoNormal>Прочитайте текст.</p><br>
+    
+     
+    <div style="border:2px solid #996633; background:#fff9ed; padding:10px;margin:10px 0px;">
+__SENTENCES_BLOCK__
+
+__SOURCE_PARAGRAPH__
+    </div><br>
+    
+    <p class="qq">__QUESTIONS_INTRO__</p>
+__QUESTIONS_ITEMS__
+
+    <p align="justify" style="font-size:14pt;text-indent:0px;margin:0px;padding:0px;color:#886600"><i>__HINT__
+    </i></p>
